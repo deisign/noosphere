@@ -1,89 +1,108 @@
----
-const signalFiles = import.meta.glob('../../signals/**/*.md', { eager: true });
-
-const signals = Object.entries(signalFiles)
-  .map(([path, mod]) => {
-    const fm = mod.frontmatter || {};
-
-    return {
-      path,
-      Content: mod.Content,
-      title: fm.title || path.split('/').pop(),
-      issue: fm.issue || '000',
-      issueTitle: fm.issue_title || 'Unsorted',
-      rubric: fm.rubric || 'Signal Bank',
-      status: fm.status || 'candidate',
-      score: fm.ai_score || 0,
-      verdict: fm.ai_verdict || '',
-      url: fm.url || '',
-      source: fm.source || '',
-      date: fm.date || '',
-    };
-  })
-  .sort((a, b) => {
-    if (a.issue !== b.issue) return a.issue.localeCompare(b.issue);
-    return Number(b.score) - Number(a.score);
-  });
----
-
 <html lang="ru">
   <head>
     <meta charset="utf-8" />
-    <title>NOOSPHERE — Signal Bank</title>
+    <title>NOOSPHERE — Issue 001</title>
     <meta name="viewport" content="width=device-width" />
     <style>
-      body { margin:0; padding:48px; background:#07070b; color:#f2f2f2; font-family:system-ui,sans-serif; }
-      main { max-width:1180px; margin:0 auto; }
-      h1 { font-size:clamp(42px,8vw,96px); letter-spacing:-0.08em; margin:0 0 8px; }
-      .lede { color:#b9b9c8; max-width:760px; font-size:20px; line-height:1.5; margin-bottom:48px; }
-      .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:24px; }
-      article { border:1px solid #26263a; background:linear-gradient(180deg,#11111a,#0b0b11); padding:24px; border-radius:18px; }
-      .meta { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#8ee6ff; }
-      .pill { border:1px solid #33334a; border-radius:999px; padding:4px 8px; }
-      .issue { color:#ffffff; border-color:#8ee6ff; }
-      .status { color:#ff4d5d; border-color:#ff4d5d; }
-      h2 { font-size:24px; line-height:1.1; margin:0 0 12px; }
-      .source { color:#b9b9c8; font-size:14px; margin-bottom:18px; }
-      .content { color:#dedee8; line-height:1.55; font-size:15px; }
-      .content h1 { font-size:22px; letter-spacing:0; margin:16px 0; }
-      .content h2 { font-size:16px; color:#8ee6ff; margin-top:24px; text-transform:uppercase; letter-spacing:.08em; }
-      .content p { margin:0 0 12px; }
-      .content a, a { color:#8ee6ff; }
-      hr { border:0; border-top:1px solid #2a2a3a; margin:20px 0; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 70% 20%, rgba(142,230,255,.18), transparent 28%),
+          radial-gradient(circle at 20% 80%, rgba(255,77,93,.16), transparent 30%),
+          #07070b;
+        color: #f2f2f2;
+        font-family: system-ui, sans-serif;
+        display: grid;
+        place-items: center;
+        padding: 48px;
+      }
+
+      main {
+        width: min(1100px, 100%);
+        border: 1px solid #2a2a3a;
+        min-height: 72vh;
+        padding: clamp(32px, 6vw, 72px);
+        background: linear-gradient(180deg, rgba(17,17,26,.88), rgba(7,7,11,.95));
+        box-shadow: 0 30px 120px rgba(0,0,0,.55);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .issue {
+        color: #8ee6ff;
+        text-transform: uppercase;
+        letter-spacing: .16em;
+        font-size: 14px;
+      }
+
+      h1 {
+        font-size: clamp(56px, 11vw, 150px);
+        line-height: .82;
+        letter-spacing: -0.09em;
+        margin: 24px 0;
+        max-width: 900px;
+      }
+
+      .subtitle {
+        color: #b9b9c8;
+        font-size: clamp(20px, 3vw, 34px);
+        line-height: 1.2;
+        max-width: 760px;
+      }
+
+      .nav {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-top: 56px;
+      }
+
+      a {
+        color: #f2f2f2;
+        text-decoration: none;
+        border: 1px solid #3a3a52;
+        border-radius: 999px;
+        padding: 12px 18px;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        font-size: 13px;
+      }
+
+      a:hover {
+        color: #8ee6ff;
+        border-color: #8ee6ff;
+      }
+
+      .red-dot {
+        position: absolute;
+        right: 38px;
+        top: 38px;
+        width: 12px;
+        height: 12px;
+        border-radius: 99px;
+        background: #ff4d5d;
+        box-shadow: 0 0 30px #ff4d5d;
+      }
     </style>
   </head>
   <body>
     <main>
-      <h1>NOOSPHERE</h1>
-      <p class="lede">
-        Signal Bank v0.1. Черновой архив Нооскопа: карточки материалов,
-        распределённые по будущим выпускам. Это ещё не публикация, а редакционная руда.
+      <div class="red-dot"></div>
+
+      <div class="issue">NOOSPHERE · ISSUE 001</div>
+
+      <h1>The Future Is a Haunted House</h1>
+
+      <p class="subtitle">
+        Умный дом — не исполнение мечты о будущем. Это архив человеческих следов:
+        голосов, привычек, маршрутов, отсутствий и обещаний, которые устарели раньше,
+        чем были выполнены.
       </p>
 
-      <div class="grid">
-        {signals.map((item) => (
-          <article>
-            <div class="meta">
-              <span class="pill issue">ISSUE {item.issue}</span>
-              <span class="pill">{item.issueTitle}</span>
-              <span class="pill">{item.rubric}</span>
-              <span class="pill status">{item.status}</span>
-              {item.verdict && <span class="pill">{item.verdict}</span>}
-              {item.score > 0 && <span class="pill">{item.score}</span>}
-            </div>
-
-            <h2>{item.title}</h2>
-
-            <div class="source">
-              {item.source} · {item.date}
-              {item.url && <> · <a href={item.url}>source</a></>}
-            </div>
-
-            <div class="content">
-              <item.Content />
-            </div>
-          </article>
-        ))}
+      <div class="nav">
+        <a href="/noosphere/signal-bank/">Open Signal Bank</a>
+        <a href="https://github.com/deisign/noosphere">Repository</a>
       </div>
     </main>
   </body>
