@@ -4,12 +4,14 @@ const signalFiles = import.meta.glob('../../signals/**/*.md', { eager: true });
 const signals = Object.entries(signalFiles)
   .map(([path, mod]) => {
     const fm = mod.frontmatter || {};
+
     return {
       path,
       Content: mod.Content,
       title: fm.title || path.split('/').pop(),
       issue: fm.issue || '000',
       issueTitle: fm.issue_title || 'Unsorted',
+      rubric: fm.rubric || 'Signal Bank',
       status: fm.status || 'candidate',
       score: fm.ai_score || 0,
       verdict: fm.ai_verdict || '',
@@ -37,7 +39,9 @@ const signals = Object.entries(signalFiles)
       .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:24px; }
       article { border:1px solid #26263a; background:linear-gradient(180deg,#11111a,#0b0b11); padding:24px; border-radius:18px; }
       .meta { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#8ee6ff; }
-      .status { color:#ff4d5d; }
+      .pill { border:1px solid #33334a; border-radius:999px; padding:4px 8px; }
+      .issue { color:#ffffff; border-color:#8ee6ff; }
+      .status { color:#ff4d5d; border-color:#ff4d5d; }
       h2 { font-size:24px; line-height:1.1; margin:0 0 12px; }
       .source { color:#b9b9c8; font-size:14px; margin-bottom:18px; }
       .content { color:#dedee8; line-height:1.55; font-size:15px; }
@@ -60,10 +64,12 @@ const signals = Object.entries(signalFiles)
         {signals.map((item) => (
           <article>
             <div class="meta">
-              <span>{item.issue} — {item.issueTitle}</span>
-              <span class="status">{item.status}</span>
-              <span>{item.verdict}</span>
-              <span>{item.score}</span>
+              <span class="pill issue">ISSUE {item.issue}</span>
+              <span class="pill">{item.issueTitle}</span>
+              <span class="pill">{item.rubric}</span>
+              <span class="pill status">{item.status}</span>
+              {item.verdict && <span class="pill">{item.verdict}</span>}
+              {item.score > 0 && <span class="pill">{item.score}</span>}
             </div>
 
             <h2>{item.title}</h2>
