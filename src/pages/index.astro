@@ -3,30 +3,25 @@ const signalFiles = import.meta.glob('../../signals/**/*.md', { eager: true });
 
 const signals = Object.entries(signalFiles)
   .map(([path, mod]) => {
-    const frontmatter = mod.frontmatter || {};
-    const issue = frontmatter.issue || '000';
-
+    const fm = mod.frontmatter || {};
     return {
       path,
-      title: frontmatter.title || path.split('/').pop(),
-      issue,
-      issueTitle: frontmatter.issue_title || 'Unsorted',
-      status: frontmatter.status || 'candidate',
-      score: frontmatter.ai_score || 0,
-      url: frontmatter.url || '',
+      Content: mod.Content,
+      title: fm.title || path.split('/').pop(),
+      issue: fm.issue || '000',
+      issueTitle: fm.issue_title || 'Unsorted',
+      status: fm.status || 'candidate',
+      score: fm.ai_score || 0,
+      verdict: fm.ai_verdict || '',
+      url: fm.url || '',
+      source: fm.source || '',
+      date: fm.date || '',
     };
   })
   .sort((a, b) => {
     if (a.issue !== b.issue) return a.issue.localeCompare(b.issue);
     return Number(b.score) - Number(a.score);
   });
-
-const grouped = signals.reduce((acc, signal) => {
-  const key = `${signal.issue} — ${signal.issueTitle}`;
-  acc[key] ||= [];
-  acc[key].push(signal);
-  return acc;
-}, {});
 ---
 
 <html lang="ru">
@@ -35,102 +30,55 @@ const grouped = signals.reduce((acc, signal) => {
     <title>NOOSPHERE — Signal Bank</title>
     <meta name="viewport" content="width=device-width" />
     <style>
-      body {
-        margin: 0;
-        padding: 48px;
-        background: #07070b;
-        color: #f2f2f2;
-        font-family: system-ui, sans-serif;
-      }
-
-      main {
-        max-width: 1100px;
-        margin: 0 auto;
-      }
-
-      h1 {
-        font-size: clamp(42px, 8vw, 96px);
-        letter-spacing: -0.08em;
-        margin: 0 0 8px;
-      }
-
-      .lede {
-        color: #b9b9c8;
-        max-width: 760px;
-        font-size: 20px;
-        line-height: 1.5;
-        margin-bottom: 48px;
-      }
-
-      section {
-        border-top: 1px solid #333344;
-        padding: 28px 0;
-      }
-
-      h2 {
-        color: #8ee6ff;
-        font-size: 18px;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        margin: 0 0 18px;
-      }
-
-      article {
-        display: grid;
-        grid-template-columns: 120px 1fr auto;
-        gap: 16px;
-        padding: 14px 0;
-        border-top: 1px solid #1b1b28;
-      }
-
-      .status {
-        color: #ff4d5d;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-
-      .title {
-        font-size: 18px;
-      }
-
-      .score {
-        color: #b9b9c8;
-      }
-
-      a {
-        color: inherit;
-        text-decoration: none;
-      }
-
-      a:hover {
-        color: #8ee6ff;
-      }
+      body { margin:0; padding:48px; background:#07070b; color:#f2f2f2; font-family:system-ui,sans-serif; }
+      main { max-width:1180px; margin:0 auto; }
+      h1 { font-size:clamp(42px,8vw,96px); letter-spacing:-0.08em; margin:0 0 8px; }
+      .lede { color:#b9b9c8; max-width:760px; font-size:20px; line-height:1.5; margin-bottom:48px; }
+      .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:24px; }
+      article { border:1px solid #26263a; background:linear-gradient(180deg,#11111a,#0b0b11); padding:24px; border-radius:18px; }
+      .meta { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#8ee6ff; }
+      .status { color:#ff4d5d; }
+      h2 { font-size:24px; line-height:1.1; margin:0 0 12px; }
+      .source { color:#b9b9c8; font-size:14px; margin-bottom:18px; }
+      .content { color:#dedee8; line-height:1.55; font-size:15px; }
+      .content h1 { font-size:22px; letter-spacing:0; margin:16px 0; }
+      .content h2 { font-size:16px; color:#8ee6ff; margin-top:24px; text-transform:uppercase; letter-spacing:.08em; }
+      .content p { margin:0 0 12px; }
+      .content a, a { color:#8ee6ff; }
+      hr { border:0; border-top:1px solid #2a2a3a; margin:20px 0; }
     </style>
   </head>
   <body>
     <main>
       <h1>NOOSPHERE</h1>
       <p class="lede">
-        Signal Bank v0.1. Черновой архив Нооскопа: найденные материалы,
+        Signal Bank v0.1. Черновой архив Нооскопа: карточки материалов,
         распределённые по будущим выпускам. Это ещё не публикация, а редакционная руда.
       </p>
 
-      {Object.entries(grouped).map(([issue, items]) => (
-        <section>
-          <h2>{issue}</h2>
+      <div class="grid">
+        {signals.map((item) => (
+          <article>
+            <div class="meta">
+              <span>{item.issue} — {item.issueTitle}</span>
+              <span class="status">{item.status}</span>
+              <span>{item.verdict}</span>
+              <span>{item.score}</span>
+            </div>
 
-          {items.map((item) => (
-            <article>
-              <div class="status">{item.status}</div>
-              <div class="title">
-                {item.url ? <a href={item.url}>{item.title}</a> : item.title}
-              </div>
-              <div class="score">{item.score}</div>
-            </article>
-          ))}
-        </section>
-      ))}
+            <h2>{item.title}</h2>
+
+            <div class="source">
+              {item.source} · {item.date}
+              {item.url && <> · <a href={item.url}>source</a></>}
+            </div>
+
+            <div class="content">
+              <item.Content />
+            </div>
+          </article>
+        ))}
+      </div>
     </main>
   </body>
 </html>
