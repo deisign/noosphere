@@ -1,0 +1,309 @@
+version: "0.1"
+project: "NOOSPHERE"
+updated: "2026-07-08"
+
+principle: >
+  Sources are split by editorial function. Signal sources produce candidate topics.
+  Media sources provide real image/audio/video candidates with provenance and license.
+  Quote sources provide verifiable textual candidates. LLMs may interpret, rank,
+  connect and reject candidates, but must not invent quotes, artworks, licenses or sources.
+
+source_types:
+  rss_signal:
+    description: "Editorial signal feeds for discovering candidate materials."
+  media_api:
+    description: "APIs/search endpoints for real visual/audio/video candidates."
+  quote_api:
+    description: "APIs/search endpoints for public-domain or verifiable textual candidates."
+  archive_api:
+    description: "Large archives usable for both signal and media retrieval."
+  manual:
+    description: "Manual/research source. Not yet automated."
+
+editorial_roles:
+  mistral:
+    role: "Archivist / primary editor"
+    tasks:
+      - "summarize signal"
+      - "assign issue and rubric"
+      - "write editorial brief"
+      - "generate search queries for media and quote retrieval"
+      - "rank retrieved candidates"
+  grok:
+    role: "Mad associative editor"
+    tasks:
+      - "generate weird cultural angle"
+      - "suggest unexpected analogies"
+      - "propose speculative but clearly labelled reading"
+      - "must not assert unchecked facts"
+  deepseek:
+    role: "Skeptic / fact-checker"
+    tasks:
+      - "check factual claims"
+      - "flag weak or unsupported assertions"
+      - "check license/provenance risk"
+      - "reject hallucinated or unverifiable media/quotes"
+  final_editor:
+    role: "Packet assembler"
+    tasks:
+      - "merge model outputs"
+      - "produce final Markdown card"
+      - "assign text_readiness"
+
+readiness_statuses:
+  - seed
+  - scored
+  - brief_ready
+  - essay_ready
+  - publish_candidate
+
+rss_signal_sources:
+  - id: public-domain-review
+    name: "The Public Domain Review"
+    active: true
+    url: "https://publicdomainreview.org/rss.xml"
+    default_rubric: "Future Archaeology"
+    use_for:
+      - "signal"
+      - "public-domain"
+      - "media-lead"
+    notes: "Already used by the current n8n workflow."
+
+  - id: jstor-daily
+    name: "JSTOR Daily"
+    active: false
+    url: "https://daily.jstor.org/feed/"
+    default_rubric: "Cultural Fossils"
+    use_for:
+      - "signal"
+      - "essay-lead"
+      - "history-of-ideas"
+    notes: "Needs RSS test before activation."
+
+  - id: smithsonian-smart-news
+    name: "Smithsonian Magazine — Smart News"
+    active: false
+    url: "https://www.smithsonianmag.com/rss/smart-news/"
+    default_rubric: "Strange Science"
+    use_for:
+      - "signal"
+      - "science-culture"
+      - "archive-lead"
+    notes: "Needs RSS test before activation."
+
+  - id: atlas-obscura
+    name: "Atlas Obscura"
+    active: false
+    url: "https://www.atlasobscura.com/feeds/latest"
+    default_rubric: "Oddities"
+    use_for:
+      - "signal"
+      - "places"
+      - "rituals"
+    notes: "Needs RSS test before activation."
+
+  - id: mit-technology-review
+    name: "MIT Technology Review"
+    active: false
+    url: "https://www.technologyreview.com/feed/"
+    default_rubric: "Machine Weather"
+    use_for:
+      - "signal"
+      - "technology"
+      - "ai-culture"
+    notes: "Needs RSS test before activation."
+
+  - id: quanta-magazine
+    name: "Quanta Magazine"
+    active: false
+    url: "https://www.quantamagazine.org/feed/"
+    default_rubric: "Strange Science"
+    use_for:
+      - "signal"
+      - "science"
+      - "mathematical-imagination"
+    notes: "Needs RSS test before activation."
+
+media_sources:
+  - id: library-of-congress
+    name: "Library of Congress"
+    type: "media_api"
+    active: true
+    requires_key: false
+    endpoint: "https://www.loc.gov/search/"
+    query_template: "https://www.loc.gov/search/?fo=json&fa=online-format:image&q={{query}}"
+    use_for:
+      - "media"
+      - "archive"
+      - "american-history"
+      - "maps"
+      - "photos"
+      - "prints"
+    license_policy: "Check item rights field. Prefer public domain / no known restrictions."
+
+  - id: wikimedia-commons
+    name: "Wikimedia Commons"
+    type: "media_api"
+    active: true
+    requires_key: false
+    endpoint: "https://commons.wikimedia.org/w/api.php"
+    query_template: "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch={{query}}&gsrnamespace=6&prop=imageinfo&iiprop=url|size|mime|extmetadata&format=json"
+    use_for:
+      - "media"
+      - "images"
+      - "illustrations"
+      - "diagrams"
+    license_policy: "Use extmetadata. Prefer Public Domain, CC0, CC BY, CC BY-SA. Reject unclear licenses."
+
+  - id: nasa-images
+    name: "NASA Images"
+    type: "media_api"
+    active: true
+    requires_key: false
+    endpoint: "https://images-api.nasa.gov/search"
+    query_template: "https://images-api.nasa.gov/search?q={{query}}&media_type=image"
+    use_for:
+      - "media"
+      - "space"
+      - "technology"
+      - "retrofuture"
+    license_policy: "Check NASA media usage notes and item metadata."
+
+  - id: wellcome-collection
+    name: "Wellcome Collection"
+    type: "media_api"
+    active: true
+    requires_key: false
+    endpoint: "https://api.wellcomecollection.org/catalogue/v2/works"
+    query_template: "https://api.wellcomecollection.org/catalogue/v2/works?query={{query}}&include=identifiers,items,production,subjects,genres"
+    use_for:
+      - "media"
+      - "medicine"
+      - "body"
+      - "science-history"
+      - "occult-science"
+    license_policy: "Check item license and access conditions."
+
+  - id: europeana
+    name: "Europeana"
+    type: "media_api"
+    active: false
+    requires_key: true
+    env_key: "EUROPEANA_API_KEY"
+    endpoint: "https://api.europeana.eu/record/v2/search.json"
+    query_template: "https://api.europeana.eu/record/v2/search.json?wskey={{EUROPEANA_API_KEY}}&query={{query}}&media=true&reusability=open"
+    use_for:
+      - "media"
+      - "european-archives"
+      - "art"
+      - "design"
+    license_policy: "Prefer reusability=open. Check rights field."
+
+  - id: rijksmuseum
+    name: "Rijksmuseum"
+    type: "media_api"
+    active: false
+    requires_key: true
+    env_key: "RIJKSMUSEUM_API_KEY"
+    endpoint: "https://www.rijksmuseum.nl/api/en/collection"
+    query_template: "https://www.rijksmuseum.nl/api/en/collection?key={{RIJKSMUSEUM_API_KEY}}&q={{query}}&imgonly=True"
+    use_for:
+      - "media"
+      - "art"
+      - "early-modern"
+      - "visual-atmosphere"
+    license_policy: "Check object webImage and rights metadata."
+
+quote_sources:
+  - id: gutendex
+    name: "Gutendex / Project Gutenberg metadata"
+    type: "quote_api"
+    active: true
+    requires_key: false
+    endpoint: "https://gutendex.com/books"
+    query_template: "https://gutendex.com/books?copyright=false&languages=en&search={{query}}"
+    use_for:
+      - "quotes"
+      - "public-domain-books"
+      - "literary-context"
+    license_policy: "Use copyright=false. Quote extraction must use actual text format URL from formats."
+
+  - id: internet-archive
+    name: "Internet Archive Advanced Search"
+    type: "archive_api"
+    active: true
+    requires_key: false
+    endpoint: "https://archive.org/advancedsearch.php"
+    query_template: "https://archive.org/advancedsearch.php?q={{query}}&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=year&fl[]=licenseurl&fl[]=publicdate&rows=10&page=1&output=json"
+    use_for:
+      - "quotes"
+      - "media"
+      - "books"
+      - "periodicals"
+      - "film"
+      - "audio"
+    license_policy: "Check licenseurl and metadata. Do not assume public domain."
+
+  - id: project-gutenberg-manual
+    name: "Project Gutenberg full text"
+    type: "manual"
+    active: true
+    requires_key: false
+    endpoint: "https://www.gutenberg.org/"
+    use_for:
+      - "quotes"
+      - "full-text"
+    license_policy: "Use only public-domain texts appropriate for target jurisdiction."
+
+manual_research_sources:
+  - id: biodiversity-heritage-library
+    name: "Biodiversity Heritage Library"
+    active: false
+    use_for:
+      - "media"
+      - "plants"
+      - "animals"
+      - "natural-history"
+    notes: "Add API/RSS after testing."
+
+  - id: nypl-digital-collections
+    name: "NYPL Digital Collections"
+    active: false
+    use_for:
+      - "media"
+      - "prints"
+      - "photos"
+      - "maps"
+    notes: "API usually requires key. Add after testing."
+
+  - id: gallica
+    name: "Gallica / BnF"
+    active: false
+    use_for:
+      - "media"
+      - "quotes"
+      - "french-archives"
+    notes: "Add SRU/API endpoints after testing."
+
+editorial_packet_schema:
+  frontmatter:
+    - title
+    - issue
+    - issue_title
+    - rubric
+    - status
+    - ai_verdict
+    - ai_score
+    - source
+    - url
+    - date
+    - text_readiness
+  sections:
+    - Raw Signal
+    - Editorial Brief
+    - Proposed Angle
+    - Grok Angle
+    - Quote Candidates
+    - Media Candidates
+    - DeepSeek Factcheck
+    - Text Readiness
