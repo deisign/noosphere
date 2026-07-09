@@ -13,7 +13,7 @@ const signals = Object.entries(signalFiles)
       issueTitle: fm.issue_title || 'Unsorted',
       rubric: fm.rubric || 'Signal Bank',
       status: fm.status || 'candidate',
-      score: fm.ai_score || 0,
+      score: Number(fm.ai_score || fm.nooscope_score || 0),
       verdict: fm.ai_verdict || '',
       url: fm.url || '',
       source: fm.source || '',
@@ -24,6 +24,31 @@ const signals = Object.entries(signalFiles)
     if (a.issue !== b.issue) return a.issue.localeCompare(b.issue);
     return Number(b.score) - Number(a.score);
   });
+
+const totalSignals = signals.length;
+
+const maxIssueNumber = Math.max(
+  19,
+  ...signals.map((item) => Number(item.issue || 0)).filter(Number.isFinite)
+);
+
+const issueNumbers = Array.from(
+  { length: maxIssueNumber + 1 },
+  (_, index) => String(index).padStart(3, '0')
+);
+
+const issueStats = issueNumbers.map((issue) => {
+  const issueSignals = signals.filter((item) => item.issue === issue);
+  const title =
+    issueSignals.find((item) => item.issueTitle && item.issueTitle !== 'Unsorted')?.issueTitle ||
+    (issue === '000' ? 'Unsorted' : '');
+
+  return {
+    issue,
+    title,
+    count: issueSignals.length,
+  };
+});
 ---
 
 <html lang="ru">
@@ -32,28 +57,233 @@ const signals = Object.entries(signalFiles)
     <title>NOOSPHERE — Signal Bank</title>
     <meta name="viewport" content="width=device-width" />
     <style>
-      body { margin:0; padding:48px; background:#07070b; color:#f2f2f2; font-family:system-ui,sans-serif; }
-      main { max-width:1180px; margin:0 auto; }
-      nav { margin-bottom:40px; }
-      nav a { color:#8ee6ff; text-decoration:none; font-size:14px; text-transform:uppercase; letter-spacing:.1em; }
-      h1 { font-size:clamp(42px,8vw,96px); letter-spacing:-0.08em; margin:0 0 8px; }
-      .lede { color:#b9b9c8; max-width:760px; font-size:20px; line-height:1.5; margin-bottom:48px; }
-      .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:24px; }
-      article { border:1px solid #26263a; background:linear-gradient(180deg,#11111a,#0b0b11); padding:24px; border-radius:18px; }
-      .meta { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#8ee6ff; }
-      .pill { border:1px solid #33334a; border-radius:999px; padding:4px 8px; }
-      .issue { color:#ffffff; border-color:#8ee6ff; }
-      .status { color:#ff4d5d; border-color:#ff4d5d; }
-      h2 { font-size:24px; line-height:1.1; margin:0 0 12px; }
-      .source { color:#b9b9c8; font-size:14px; margin-bottom:18px; }
-      .content { color:#dedee8; line-height:1.55; font-size:15px; }
-      .content h1 { font-size:22px; letter-spacing:0; margin:16px 0; }
-      .content h2 { font-size:16px; color:#8ee6ff; margin-top:24px; text-transform:uppercase; letter-spacing:.08em; }
-      .content p { margin:0 0 12px; }
-      .content a, a { color:#8ee6ff; }
-      hr { border:0; border-top:1px solid #2a2a3a; margin:20px 0; }
+      body {
+        margin: 0;
+        padding: 48px;
+        background: #07070b;
+        color: #f2f2f2;
+        font-family: system-ui, sans-serif;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+      }
+
+      nav {
+        margin-bottom: 40px;
+      }
+
+      nav a {
+        color: #8ee6ff;
+        text-decoration: none;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+      }
+
+      h1 {
+        font-size: clamp(42px, 8vw, 96px);
+        letter-spacing: -0.08em;
+        margin: 0 0 8px;
+      }
+
+      .lede {
+        color: #b9b9c8;
+        max-width: 760px;
+        font-size: 20px;
+        line-height: 1.5;
+        margin-bottom: 32px;
+      }
+
+      .bank-overview {
+        border: 1px solid #26263a;
+        background: linear-gradient(180deg, #11111a, #0b0b11);
+        border-radius: 22px;
+        padding: 22px;
+        margin: 0 0 32px;
+      }
+
+      .bank-overview-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: baseline;
+        margin-bottom: 16px;
+      }
+
+      .bank-overview-title {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: .14em;
+        color: #8ee6ff;
+      }
+
+      .bank-overview-total {
+        color: #f2f2f2;
+        font-size: 14px;
+      }
+
+      .issue-counter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .counter-chip {
+        appearance: none;
+        cursor: pointer;
+        border: 1px solid #33334a;
+        background: #0b0b11;
+        color: #b9b9c8;
+        border-radius: 999px;
+        padding: 7px 10px;
+        font: inherit;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+      }
+
+      .counter-chip:hover {
+        border-color: #8ee6ff;
+        color: #ffffff;
+      }
+
+      .counter-chip.is-active {
+        color: #ffffff;
+        border-color: #8ee6ff;
+        box-shadow: 0 0 0 1px rgba(142, 230, 255, .25);
+      }
+
+      .counter-chip.is-empty {
+        opacity: .38;
+      }
+
+      .counter-number {
+        color: #8ee6ff;
+      }
+
+      .counter-count {
+        color: #ffffff;
+      }
+
+      .visible-count {
+        color: #b9b9c8;
+        font-size: 14px;
+        margin: 0 0 18px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: 24px;
+      }
+
+      article {
+        border: 1px solid #26263a;
+        background: linear-gradient(180deg, #11111a, #0b0b11);
+        padding: 24px;
+        border-radius: 18px;
+      }
+
+      article.is-hidden {
+        display: none;
+      }
+
+      .meta {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: #8ee6ff;
+      }
+
+      .pill {
+        border: 1px solid #33334a;
+        border-radius: 999px;
+        padding: 4px 8px;
+      }
+
+      .issue {
+        color: #ffffff;
+        border-color: #8ee6ff;
+      }
+
+      .status {
+        color: #ff4d5d;
+        border-color: #ff4d5d;
+      }
+
+      h2 {
+        font-size: 24px;
+        line-height: 1.1;
+        margin: 0 0 12px;
+      }
+
+      .source {
+        color: #b9b9c8;
+        font-size: 14px;
+        margin-bottom: 18px;
+      }
+
+      .content {
+        color: #dedee8;
+        line-height: 1.55;
+        font-size: 15px;
+      }
+
+      .content h1 {
+        font-size: 22px;
+        letter-spacing: 0;
+        margin: 16px 0;
+      }
+
+      .content h2 {
+        font-size: 16px;
+        color: #8ee6ff;
+        margin-top: 24px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+      }
+
+      .content p {
+        margin: 0 0 12px;
+      }
+
+      .content a,
+      a {
+        color: #8ee6ff;
+      }
+
+      hr {
+        border: 0;
+        border-top: 1px solid #2a2a3a;
+        margin: 20px 0;
+      }
+
+      @media (max-width: 720px) {
+        body {
+          padding: 24px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .bank-overview-header {
+          display: block;
+        }
+
+        .bank-overview-total {
+          margin-top: 6px;
+        }
+      }
     </style>
   </head>
+
   <body>
     <main>
       <nav>
@@ -61,14 +291,45 @@ const signals = Object.entries(signalFiles)
       </nav>
 
       <h1>SIGNAL BANK</h1>
+
       <p class="lede">
         Черновой архив Нооскопа: карточки материалов, распределённые по будущим выпускам.
         Это ещё не публикация, а редакционная руда.
       </p>
 
-      <div class="grid">
+      <section class="bank-overview" aria-label="Signal Bank overview">
+        <div class="bank-overview-header">
+          <div class="bank-overview-title">Issue map</div>
+          <div class="bank-overview-total">Всего материалов: <strong>{totalSignals}</strong></div>
+        </div>
+
+        <div class="issue-counter" data-issue-counter>
+          <button class="counter-chip is-active" type="button" data-filter-issue="all">
+            <span class="counter-number">ALL</span>
+            <span class="counter-count">{totalSignals}</span>
+          </button>
+
+          {issueStats.map((item) => (
+            <button
+              class={`counter-chip ${item.count === 0 ? 'is-empty' : ''}`}
+              type="button"
+              data-filter-issue={item.issue}
+              title={item.title ? `ISSUE ${item.issue} — ${item.title}` : `ISSUE ${item.issue}`}
+            >
+              <span class="counter-number">{item.issue}</span>
+              <span class="counter-count">{item.count}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <p class="visible-count" data-visible-count>
+        Показано: {totalSignals} из {totalSignals}
+      </p>
+
+      <div class="grid" data-signal-grid>
         {signals.map((item) => (
-          <article>
+          <article data-issue={item.issue}>
             <div class="meta">
               <span class="pill issue">ISSUE {item.issue}</span>
               <span class="pill">{item.issueTitle}</span>
@@ -92,5 +353,56 @@ const signals = Object.entries(signalFiles)
         ))}
       </div>
     </main>
+
+    <script>
+      const buttons = Array.from(document.querySelectorAll('[data-filter-issue]'));
+      const cards = Array.from(document.querySelectorAll('[data-issue]'));
+      const visibleCount = document.querySelector('[data-visible-count]');
+      const total = cards.length;
+
+      function setActive(issue) {
+        for (const button of buttons) {
+          button.classList.toggle('is-active', button.dataset.filterIssue === issue);
+        }
+      }
+
+      function filterSignals(issue) {
+        let shown = 0;
+
+        for (const card of cards) {
+          const isVisible = issue === 'all' || card.dataset.issue === issue;
+
+          card.classList.toggle('is-hidden', !isVisible);
+
+          if (isVisible) {
+            shown += 1;
+          }
+        }
+
+        setActive(issue);
+
+        if (visibleCount) {
+          visibleCount.textContent = `Показано: ${shown} из ${total}`;
+        }
+
+        if (issue === 'all') {
+          history.replaceState(null, '', location.pathname);
+        } else {
+          history.replaceState(null, '', `#issue-${issue}`);
+        }
+      }
+
+      for (const button of buttons) {
+        button.addEventListener('click', () => {
+          filterSignals(button.dataset.filterIssue || 'all');
+        });
+      }
+
+      const hashIssue = location.hash.replace('#issue-', '');
+
+      if (hashIssue && buttons.some((button) => button.dataset.filterIssue === hashIssue)) {
+        filterSignals(hashIssue);
+      }
+    </script>
   </body>
 </html>
